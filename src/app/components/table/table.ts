@@ -1448,68 +1448,79 @@ export class Table implements OnInit, AfterContentInit {
         let newColumnWidth = columnWidth + delta;
         let minWidth = column.style.minWidth || 15;
 
-        if (columnWidth + delta > parseInt(minWidth)) {
-            if (this.columnResizeMode === 'fit') {
-                let nextColumn = column.nextElementSibling;
-                while (!nextColumn.offsetParent) {
-                    nextColumn = nextColumn.nextElementSibling;
-                }
+        //If user sets new width to below min width, change newColumnWidth to minWidth
+        if (columnWidth + delta < parseInt(minWidth)) {
+            newColumnWidth = minWidth;
+        }
 
-                if (nextColumn) {
-                    let nextColumnWidth = nextColumn.offsetWidth - delta;
-                    let nextColumnMinWidth = nextColumn.style.minWidth || 15;
+        //Check if table has frozen colums and if true, get the right table element. 
+        if(this.frozenColumns) {
+            var scrollableBodyTable = this.domHandler.findSingle(this.el.nativeElement, '.ui-table-unfrozen-view table.ui-table-scrollable-body-table');
+            var scrollableHeaderTable = this.domHandler.findSingle(this.el.nativeElement, '.ui-table-unfrozen-view table.ui-table-scrollable-header-table');
+            var scrollableFooterTable = this.domHandler.findSingle(this.el.nativeElement, '.ui-table-unfrozen-view table.ui-table-scrollable-footer-table');
+        }
+        else{
+            var scrollableBodyTable = this.domHandler.findSingle(this.el.nativeElement, 'table.ui-table-scrollable-body-table');
+            var scrollableHeaderTable = this.domHandler.findSingle(this.el.nativeElement, 'table.ui-table-scrollable-header-table');
+            var scrollableFooterTable = this.domHandler.findSingle(this.el.nativeElement, 'table.ui-table-scrollable-footer-table');
+        }
 
-                    if (newColumnWidth > 15 && nextColumnWidth > parseInt(nextColumnMinWidth)) {
-                        if (this.scrollable) {
-                            let scrollableView = this.findParentScrollableView(column);
-                            let scrollableBodyTable = this.domHandler.findSingle(scrollableView, 'table.ui-table-scrollable-body-table');
-                            let scrollableHeaderTable = this.domHandler.findSingle(scrollableView, 'table.ui-table-scrollable-header-table');
-                            let scrollableFooterTable = this.domHandler.findSingle(scrollableView, 'table.ui-table-scrollable-footer-table');
-                            let resizeColumnIndex = this.domHandler.index(column);
 
-                            this.resizeColGroup(scrollableHeaderTable, resizeColumnIndex, newColumnWidth, nextColumnWidth);
-                            this.resizeColGroup(scrollableBodyTable, resizeColumnIndex, newColumnWidth, nextColumnWidth);
-                            this.resizeColGroup(scrollableFooterTable, resizeColumnIndex, newColumnWidth, nextColumnWidth);
-                        }
-                        else {
-                            column.style.width = newColumnWidth + 'px';
-                            if (nextColumn) {
-                                nextColumn.style.width = nextColumnWidth + 'px';
-                            }
+        if (this.columnResizeMode === 'fit') {
+            let nextColumn = column.nextElementSibling;
+            while (!nextColumn.offsetParent) {
+                nextColumn = nextColumn.nextElementSibling;
+            }
+
+            if (nextColumn) {
+                let nextColumnWidth = nextColumn.offsetWidth - delta;
+                let nextColumnMinWidth = nextColumn.style.minWidth || 15;
+
+                if (newColumnWidth > 15 && nextColumnWidth > parseInt(nextColumnMinWidth)) {
+                    if (this.scrollable) {
+                        let scrollableView = this.findParentScrollableView(column);
+                        let resizeColumnIndex = this.domHandler.index(column);
+
+                        this.resizeColGroup(scrollableHeaderTable, resizeColumnIndex, newColumnWidth, nextColumnWidth);
+                        this.resizeColGroup(scrollableBodyTable, resizeColumnIndex, newColumnWidth, nextColumnWidth);
+                        this.resizeColGroup(scrollableFooterTable, resizeColumnIndex, newColumnWidth, nextColumnWidth);
+                    }
+                    else {
+                        column.style.width = newColumnWidth + 'px';
+                        if (nextColumn) {
+                            nextColumn.style.width = nextColumnWidth + 'px';
                         }
                     }
                 }
             }
-            else if (this.columnResizeMode === 'expand') {
-                if (this.scrollable) {
-                    let scrollableView = this.findParentScrollableView(column);
-                    let scrollableBodyTable = this.domHandler.findSingle(scrollableView, 'table.ui-table-scrollable-body-table');
-                    let scrollableHeaderTable = this.domHandler.findSingle(scrollableView, 'table.ui-table-scrollable-header-table');
-                    let scrollableFooterTable = this.domHandler.findSingle(scrollableView, 'table.ui-table-scrollable-footer-table');
-                    scrollableBodyTable.style.width = scrollableBodyTable.offsetWidth + delta + 'px';
-                    scrollableHeaderTable.style.width = scrollableHeaderTable.offsetWidth + delta + 'px';
-                    if(scrollableFooterTable) {
-                        scrollableFooterTable.style.width = scrollableHeaderTable.offsetWidth + delta + 'px';
-                    }
-                    let resizeColumnIndex = this.domHandler.index(column);
+        }
+        else if (this.columnResizeMode === 'expand') {
+            if (this.scrollable) {
+                let scrollableView = this.findParentScrollableView(column);
+                scrollableBodyTable.style.width = scrollableBodyTable.offsetWidth + delta + 'px';
+                scrollableHeaderTable.style.width = scrollableHeaderTable.offsetWidth + delta + 'px';
+                if(scrollableFooterTable) {
+                    scrollableFooterTable.style.width = scrollableHeaderTable.offsetWidth + delta + 'px';
+                }
+                let resizeColumnIndex = this.domHandler.index(column);
 
-                    this.resizeColGroup(scrollableHeaderTable, resizeColumnIndex, newColumnWidth, null);
-                    this.resizeColGroup(scrollableBodyTable, resizeColumnIndex, newColumnWidth, null);
-                    this.resizeColGroup(scrollableFooterTable, resizeColumnIndex, newColumnWidth, null);
-                }
-                else {
-                    this.tableViewChild.nativeElement.style.width = this.tableViewChild.nativeElement.offsetWidth + delta + 'px';
-                    column.style.width = newColumnWidth + 'px';
-                    let containerWidth = this.tableViewChild.nativeElement.style.width;
-                    this.containerViewChild.nativeElement.style.width = containerWidth + 'px';
-                }
+                this.resizeColGroup(scrollableHeaderTable, resizeColumnIndex, newColumnWidth, null);
+                this.resizeColGroup(scrollableBodyTable, resizeColumnIndex, newColumnWidth, null);
+                this.resizeColGroup(scrollableFooterTable, resizeColumnIndex, newColumnWidth, null);
             }
+            else {
+                this.tableViewChild.nativeElement.style.width = this.tableViewChild.nativeElement.offsetWidth + delta + 'px';
+                column.style.width = newColumnWidth + 'px';
+                let containerWidth = this.tableViewChild.nativeElement.style.width;
+                this.containerViewChild.nativeElement.style.width = containerWidth + 'px';
+            }
+        }
 
             this.onColResize.emit({
                 element: column,
                 delta: delta
             });
-        }
+        
 
         this.resizeHelperViewChild.nativeElement.style.display = 'none';
         this.domHandler.removeClass(this.containerViewChild.nativeElement, 'ui-unselectable-text');
